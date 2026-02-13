@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Master Реестр v3.0 Cloud</title>
+    <style>
+        :root { --primary: #1a73e8; --success: #28a745; --danger: #dc3545; --bg: #f8f9fa; --accent: #e8f0fe; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 10px; color: #333; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .card { background: #fff; border: 1px solid #eef0f2; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        @media (min-width: 600px) { .grid { grid-template-columns: 1fr 1fr; } .span-2 { grid-column: span 2; } }
+        label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; margin-bottom: 4px; display: block; }
+        input, textarea, button { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; outline: none; }
+        .readonly-field { background: #f1f3f4 !important; color: #5f6368 !important; border: 1px dashed #ccc !important; }
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:active { transform: scale(0.98); }
+        .btn-add { background: var(--success); }
+        .table-scroll { overflow-x: auto; margin-top: 15px; border: 1px solid #eee; border-radius: 10px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1000px; font-size: 13px; }
+        th, td { padding: 12px; border: 1px solid #eee; text-align: left; }
+        th { background: #f8f9fa; }
+        #adminArea { display: none; margin-top: 20px; border-top: 2px solid #eee; padding-top: 20px; }
+        .loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.8); z-index: 10000; align-items:center; justify-content:center; font-weight: bold; }
+        @media print { .no-print { display: none !important; } #adminArea { display: block !important; } @page { size: landscape; } }
+    </style>
+</head>
+<body>
+
+<div id="loader" class="loading-overlay">Синхронизация с облаком...</div>
+
+<div class="container">
+    <h1 class="no-print" style="text-align:center; font-size:22px;">📋 Облачный Реестр Master</h1>
+
+    <div class="card no-print">
+        <div class="grid">
+            <div><label>Дата и время (авто)</label><input type="datetime-local" id="c_date" class="readonly-field" readonly></div>
+            <div><label>ФИО Заявителя</label><input type="text" id="c_name" placeholder="Обязательно"></div>
+            <div><label>Дата рождения (заяв.)</label><input type="date" id="c_birth"></div>
+            <div><label>Телефон</label><input type="tel" id="c_phone" placeholder="+7..."></div>
+            <div class="span-2"><label>Адрес проживания</label><input type="text" id="c_address"></div>
+            <div><label>ФИО Нуждающегося</label><input type="text" id="c_need_name"></div>
+            <div><label>Дата рождения (нужд.)</label><input type="date" id="c_need_birth"></div>
+            <div class="span-2"><label>Диагноз / Причина</label><textarea id="c_diag" rows="2"></textarea></div>
+            <button class="span-2 btn-add" onclick="submitToFirebase()">🚀 ОТПРАВИТЬ В ОБЛАКО</button>
+        </div>
+    </div>
+
+    <div class="card no-print" style="background: var(--accent);">
+        <label>Проверить очередь</label>
+        <div style="display:flex; gap:8px;">
+            <input type="text" id="s_query" placeholder="Введите ФИО заявителя...">
+            <button onclick="searchCloud()" style="width:120px;">ПОИСК</button>
+        </div>
+        <div id="res" style="display:none; margin-top:10px; padding:15px; background:white; border-radius:10px; border:1px solid #c2dbff;">
+            <span id="res_name" style="font-weight:bold;"></span> — Позиция в реестре: 
+            <span id="res_pos" style="font-size:22px; font-weight:900; color:var(--primary);"></span>
+        </div>
+    </div>
+
+    <div class="no-print" style="text-align:center; color:#bbb; cursor:pointer; padding:20px;" onclick="toggleAdmin()">Администрирование</div>
+    
+    <div id="pass_box" class="no-print" style="display:none; text-align:center; margin-bottom: 20px;">
+        <input type="password" id="p_word" placeholder="Пароль" style="max-width:150px; display:inline-block;">
+        <button onclick="login()" style="width:auto; padding:12px 20px; background:var(--success)">ВХОД</button>
+    </div>
+
+    <div id="adminArea">
+        <div style="display:flex; justify-content:space-between; align-items:center;" class="no-print">
+            <h2 style="margin:0;">📊 Полный реестр (Облако)</h2>
+            <button onclick="window.print()" style="background:#6c757d; width:auto; padding:10px 20px;">🖨️ ПЕЧАТЬ В PDF</button>
+        </div>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>№</th>
+                        <th>Дата/Время</th>
+                        <th>Заявитель</th>
+                        <th>Телефон</th>
+                        <th>Адрес</th>
+                        <th>Нуждающийся</th>
+                        <th>Диагноз</th>
+                        <th class="no-print">Действие</th>
+                    </tr>
+                </thead>
+                <tbody id="t_body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Настроенная ссылка Master
+    const FIREBASE_URL = "https://zaavka-d0788-default-rtdb.firebaseio.com/registry.json";
+
+    const fmtDT = (dt) => {
+        const d = new Date(dt);
+        return d.toLocaleDateString('ru-RU') + '<br><b>' + d.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'}) + '</b>';
+    };
+    const fmtD = (d) => d ? d.split('-').reverse().join('.') : '-';
+
+    window.onload = () => {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('c_date').value = now.toISOString().slice(0, 16);
+    };
+
+    function toggleAdmin() {
+        const b = document.getElementById('pass_box');
+        b.style.display = b.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function submitToFirebase() {
+        const fields = {
+            name: 'c_name', birth: 'c_birth', phone: 'c_phone', 
+            address: 'c_address', need_name: 'c_need_name', 
+            need_birth: 'c_need_birth', diag: 'c_diag'
+        };
+        
+        let data = { date: document.getElementById('c_date').value };
+        for(let key in fields) {
+            const val = document.getElementById(fields[key]).value.trim();
+            if(!val) return alert("Пожалуйста, заполните все поля!");
+            data[key] = val;
+        }
+
+        showLoader(true);
+        try {
+            await fetch(FIREBASE_URL, { method: 'POST', body: JSON.stringify(data) });
+            alert("Заявка успешно сохранена в облаке!");
+            location.reload();
+        } catch (e) { alert("Ошибка сети. Проверьте интернет."); }
+        showLoader(false);
+    }
+
+    async function loadFromCloud() {
+        showLoader(true);
+        try {
+            const res = await fetch(FIREBASE_URL);
+            const data = await res.json();
+            const b = document.getElementById('t_body');
+            b.innerHTML = '';
+            
+            if(!data) { b.innerHTML = '<tr><td colspan="8" style="text-align:center;">База данных пуста</td></tr>'; return []; }
+
+            const items = Object.keys(data).map(key => ({ fid: key, ...data[key] }));
+            items.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            items.forEach((it, i) => {
+                b.innerHTML += `<tr>
+                    <td><b>${i+1}</b></td>
+                    <td style="color:var(--primary);">${fmtDT(it.date)}</td>
+                    <td>${it.name}<br><small>${fmtD(it.birth)}</small></td>
+                    <td>${it.phone}</td>
+                    <td><small>${it.address}</small></td>
+                    <td>${it.need_name}<br><small>${fmtD(it.need_birth)}</small></td>
+                    <td><small>${it.diag}</small></td>
+                    <td class="no-print">
+                        <button onclick="deleteRow('${it.fid}')" style="background:var(--danger); padding:5px; width:35px;">✕</button>
+                    </td>
+                </tr>`;
+            });
+            return items;
+        } catch (e) { alert("Ошибка загрузки данных!"); return []; }
+        finally { showLoader(false); }
+    }
+
+    async function deleteRow(fid) {
+        if(!confirm("Удалить запись из облака навсегда?")) return;
+        showLoader(true);
+        const url = FIREBASE_URL.replace('.json', `/${fid}.json`);
+        await fetch(url, { method: 'DELETE' });
+        loadFromCloud();
+    }
+
+    async function searchCloud() {
+        const q = document.getElementById('s_query').value.toLowerCase().trim();
+        if(!q) return;
+        const resDiv = document.getElementById('res');
+        resDiv.style.display = 'none';
+        
+        showLoader(true);
+        const res = await fetch(FIREBASE_URL);
+        const data = await res.json();
+        showLoader(false);
+
+        if(!data) return alert("База пуста");
+
+        const items = Object.keys(data).map(key => data[key]);
+        items.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        const idx = items.findIndex(it => it.name.toLowerCase().includes(q));
+        if(idx !== -1) {
+            resDiv.style.display = 'block';
+            document.getElementById('res_name').innerText = items[idx].name;
+            document.getElementById('res_pos').innerText = "№" + (idx + 1);
+        } else alert("Заявитель не найден в системе.");
+    }
+
+    function login() {
+        if(document.getElementById('p_word').value === '01') {
+            document.getElementById('adminArea').style.display = 'block';
+            document.getElementById('pass_box').style.display = 'none';
+            loadFromCloud();
+        } else alert("Неверный пароль администратора.");
+    }
+
+    function showLoader(show) { document.getElementById('loader').style.display = show ? 'flex' : 'none'; }
+</script>
+</body>
+</html>
