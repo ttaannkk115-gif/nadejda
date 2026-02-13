@@ -3,63 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master Реестр v3.0 Cloud</title>
+    <title>Master Реестр Cloud v3.6 Ultra</title>
     <style>
         :root { --primary: #1a73e8; --success: #28a745; --danger: #dc3545; --bg: #f8f9fa; --accent: #e8f0fe; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 10px; color: #333; }
-        .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 10px; color: #333; line-height: 1.5; }
+        .container { max-width: 1400px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        
         .card { background: #fff; border: 1px solid #eef0f2; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
         .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
         @media (min-width: 600px) { .grid { grid-template-columns: 1fr 1fr; } .span-2 { grid-column: span 2; } }
+        
         label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; margin-bottom: 4px; display: block; }
-        input, textarea, button { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; outline: none; }
-        .readonly-field { background: #f1f3f4 !important; color: #5f6368 !important; border: 1px dashed #ccc !important; }
-        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        input, textarea, button { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; outline: none; transition: 0.2s; }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,115,232,0.1); }
+        .readonly-field { background: #f1f3f4 !important; color: #5f6368 !important; border: 1px dashed #ccc !important; cursor: not-allowed; }
+        .error-field { border: 2px solid var(--danger) !important; background: #fff8f8; }
+
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
         button:active { transform: scale(0.98); }
         .btn-add { background: var(--success); }
+        
         .table-scroll { overflow-x: auto; margin-top: 15px; border: 1px solid #eee; border-radius: 10px; }
-        table { width: 100%; border-collapse: collapse; min-width: 1000px; font-size: 13px; }
-        th, td { padding: 12px; border: 1px solid #eee; text-align: left; }
-        th { background: #f8f9fa; }
+        table { width: 100%; border-collapse: collapse; min-width: 1200px; font-size: 13px; }
+        th, td { padding: 10px; border: 1px solid #eee; text-align: left; vertical-align: top; }
+        th { background: #f8f9fa; font-weight: bold; color: #555; }
+        
         #adminArea { display: none; margin-top: 20px; border-top: 2px solid #eee; padding-top: 20px; }
-        .loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.8); z-index: 10000; align-items:center; justify-content:center; font-weight: bold; }
-        @media print { .no-print { display: none !important; } #adminArea { display: block !important; } @page { size: landscape; } }
+        #modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; align-items:center; justify-content:center; padding:10px; backdrop-filter: blur(4px); }
+        .modal-content { background:white; padding:20px; border-radius:15px; max-width:600px; width:100%; max-height:90vh; overflow-y:auto; }
+
+        .loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.8); z-index: 11000; align-items:center; justify-content:center; font-weight: bold; }
+        
+        @media print { 
+            .no-print { display: none !important; } 
+            #adminArea { display: block !important; } 
+            body { padding: 0; background: white; }
+            .container { box-shadow: none; border: none; width: 100%; max-width: 100%; padding: 0; }
+            th, td { border: 1px solid #000 !important; }
+            @page { size: landscape; margin: 1cm; } 
+        }
     </style>
 </head>
 <body>
 
-<div id="loader" class="loading-overlay">Синхронизация с облаком...</div>
+<div id="loader" class="loading-overlay">⏳ Синхронизация с облаком...</div>
 
 <div class="container">
-    <h1 class="no-print" style="text-align:center; font-size:22px;">📋 Облачный Реестр Master</h1>
+    <h1 class="no-print" style="text-align:center; font-size:22px;">📋 Очередь на реабилитацию на 2027год</h1>
 
     <div class="card no-print">
-        <div class="grid">
-            <div><label>Дата и время (авто)</label><input type="datetime-local" id="c_date" class="readonly-field" readonly></div>
-            <div><label>ФИО Заявителя</label><input type="text" id="c_name" placeholder="Обязательно"></div>
-            <div><label>Дата рождения (заяв.)</label><input type="date" id="c_birth"></div>
-            <div><label>Телефон</label><input type="tel" id="c_phone" placeholder="+7..."></div>
-            <div class="span-2"><label>Адрес проживания</label><input type="text" id="c_address"></div>
-            <div><label>ФИО Нуждающегося</label><input type="text" id="c_need_name"></div>
-            <div><label>Дата рождения (нужд.)</label><input type="date" id="c_need_birth"></div>
-            <div class="span-2"><label>Диагноз / Причина</label><textarea id="c_diag" rows="2"></textarea></div>
-            <button class="span-2 btn-add" onclick="submitToFirebase()">🚀 ОТПРАВИТЬ В ОБЛАКО</button>
+        <div class="grid" id="mainForm">
+            <div><label>Дата обращения (авто)</label><input type="text" id="disp_date" class="readonly-field" readonly></div>
+            <div><label>ФИО Заявителя</label><input type="text" id="c_name" placeholder="Обязательно" oninput="saveDraft()"></div>
+            <div><label>Дата рождения (заяв.)</label><input type="date" id="c_birth" oninput="saveDraft()"></div>
+            <div><label>Телефон</label><input type="tel" id="c_phone" placeholder="+7..." oninput="saveDraft()"></div>
+            <div class="span-2"><label>Адрес проживания</label><input type="text" id="c_address" placeholder="Город, улица, дом, кв." oninput="saveDraft()"></div>
+            <div><label>ФИО Нуждающегося</label><input type="text" id="c_need_name" oninput="saveDraft()"></div>
+            <div><label>Дата рождения (нужд.)</label><input type="date" id="c_need_birth" oninput="saveDraft()"></div>
+            <div class="span-2"><label>Диагноз / Причина</label><textarea id="c_diag" rows="2" oninput="saveDraft()"></textarea></div>
+            <button class="span-2 btn-add" onclick="submitToFirebase()">🚀 ОТПРАВИТЬ ЗАЯВЛЕНИЕ</button>
         </div>
     </div>
 
     <div class="card no-print" style="background: var(--accent);">
-        <label>Проверить очередь</label>
+        <label>Проверить свою позицию</label>
         <div style="display:flex; gap:8px;">
             <input type="text" id="s_query" placeholder="Введите ФИО заявителя...">
-            <button onclick="searchCloud()" style="width:120px;">ПОИСК</button>
+            <button onclick="searchCloud()" style="width:100px;">ПОИСК</button>
         </div>
         <div id="res" style="display:none; margin-top:10px; padding:15px; background:white; border-radius:10px; border:1px solid #c2dbff;">
-            <span id="res_name" style="font-weight:bold;"></span> — Позиция в реестре: 
-            <span id="res_pos" style="font-size:22px; font-weight:900; color:var(--primary);"></span>
+            <span id="res_name" style="font-weight:bold;"></span> — Ваш номер: 
+            <span id="res_pos" style="font-size:24px; font-weight:900; color:var(--primary);"></span>
         </div>
     </div>
 
-    <div class="no-print" style="text-align:center; color:#bbb; cursor:pointer; padding:20px;" onclick="toggleAdmin()">Администрирование</div>
+    <div class="no-print" style="text-align:center; color:#bbb; cursor:pointer; padding:15px; font-size: 12px;" onclick="toggleAdmin()">🔒 Панель управления</div>
     
     <div id="pass_box" class="no-print" style="display:none; text-align:center; margin-bottom: 20px;">
         <input type="password" id="p_word" placeholder="Пароль" style="max-width:150px; display:inline-block;">
@@ -67,20 +85,22 @@
     </div>
 
     <div id="adminArea">
-        <div style="display:flex; justify-content:space-between; align-items:center;" class="no-print">
-            <h2 style="margin:0;">📊 Полный реестр (Облако)</h2>
-            <button onclick="window.print()" style="background:#6c757d; width:auto; padding:10px 20px;">🖨️ ПЕЧАТЬ В PDF</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;" class="no-print">
+            <h2 style="margin:0;">📊 Реестр (Облако)</h2>
+            <button onclick="window.print()" style="background:#6c757d; width:auto; padding:10px 20px;">🖨️ ПЕЧАТЬ</button>
         </div>
         <div class="table-scroll">
             <table>
                 <thead>
                     <tr>
                         <th>№</th>
-                        <th>Дата/Время</th>
-                        <th>Заявитель</th>
+                        <th>Дата заявки</th>
+                        <th>Адрес проживания</th>
                         <th>Телефон</th>
-                        <th>Адрес</th>
+                        <th>Заявитель</th>
+                        <th>ДР (Заяв.)</th>
                         <th>Нуждающийся</th>
+                        <th>ДР (Нужд.)</th>
                         <th>Диагноз</th>
                         <th class="no-print">Действие</th>
                     </tr>
@@ -91,47 +111,91 @@
     </div>
 </div>
 
+<div id="modal" class="no-print">
+    <div class="modal-content">
+        <h3 style="margin-top:0;">📝 Редактирование записи</h3>
+        <input type="hidden" id="e_fid">
+        <div class="grid">
+            <div class="span-2"><label>Дата и время (только админ)</label><input type="datetime-local" id="e_date"></div>
+            <div><label>ФИО Заявителя</label><input type="text" id="e_name"></div>
+            <div><label>ДР Заявителя</label><input type="date" id="e_birth"></div>
+            <div><label>Телефон</label><input type="tel" id="e_phone"></div>
+            <div class="span-2"><label>Адрес</label><input type="text" id="e_address"></div>
+            <div><label>ФИО Нуждающегося</label><input type="text" id="e_need_name"></div>
+            <div><label>ДР Нуждающегося</label><input type="date" id="e_need_birth"></div>
+            <div class="span-2"><label>Диагноз</label><textarea id="e_diag" rows="3"></textarea></div>
+            <button class="btn-add" onclick="saveEdit()">СОХРАНИТЬ ИЗМЕНЕНИЯ</button>
+            <button style="background:#666" onclick="closeModal()">ОТМЕНА</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    // Настроенная ссылка Master
+    // Подключение вашей базы Firebase
     const FIREBASE_URL = "https://zaavka-d0788-default-rtdb.firebaseio.com/registry.json";
+    const fields = ['c_name', 'c_birth', 'c_phone', 'c_address', 'c_need_name', 'c_need_birth', 'c_diag'];
 
     const fmtDT = (dt) => {
         const d = new Date(dt);
-        return d.toLocaleDateString('ru-RU') + '<br><b>' + d.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'}) + '</b>';
+        return d.toLocaleDateString('ru-RU') + ' ' + d.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
     };
     const fmtD = (d) => d ? d.split('-').reverse().join('.') : '-';
 
+    // Обновление времени и загрузка черновика
     window.onload = () => {
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        document.getElementById('c_date').value = now.toISOString().slice(0, 16);
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('disp_date').value = now.toLocaleString('ru-RU');
+        }, 1000);
+        loadDraft();
     };
+
+    // Функции Черновика
+    function saveDraft() {
+        const draft = {};
+        fields.forEach(id => draft[id] = document.getElementById(id).value);
+        localStorage.setItem('master_draft', JSON.stringify(draft));
+    }
+
+    function loadDraft() {
+        const draft = JSON.parse(localStorage.getItem('master_draft'));
+        if (draft) fields.forEach(id => { if(draft[id]) document.getElementById(id).value = draft[id]; });
+    }
 
     function toggleAdmin() {
         const b = document.getElementById('pass_box');
         b.style.display = b.style.display === 'none' ? 'block' : 'none';
     }
 
+    // Отправка в облако
     async function submitToFirebase() {
-        const fields = {
-            name: 'c_name', birth: 'c_birth', phone: 'c_phone', 
-            address: 'c_address', need_name: 'c_need_name', 
-            need_birth: 'c_need_birth', diag: 'c_diag'
-        };
+        let valid = true;
+        fields.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el.value.trim()) { el.classList.add('error-field'); valid = false; }
+            else el.classList.remove('error-field');
+        });
         
-        let data = { date: document.getElementById('c_date').value };
-        for(let key in fields) {
-            const val = document.getElementById(fields[key]).value.trim();
-            if(!val) return alert("Пожалуйста, заполните все поля!");
-            data[key] = val;
-        }
+        if (!valid) return alert("Заполните все обязательные поля!");
+
+        const data = {
+            date: new Date().toISOString(), // Фиксация даты отправки
+            name: document.getElementById('c_name').value.trim(),
+            birth: document.getElementById('c_birth').value,
+            phone: document.getElementById('c_phone').value.trim(),
+            address: document.getElementById('c_address').value.trim(),
+            need_name: document.getElementById('c_need_name').value.trim(),
+            need_birth: document.getElementById('c_need_birth').value,
+            diag: document.getElementById('c_diag').value.trim()
+        };
 
         showLoader(true);
         try {
             await fetch(FIREBASE_URL, { method: 'POST', body: JSON.stringify(data) });
-            alert("Заявка успешно сохранена в облаке!");
+            localStorage.removeItem('master_draft');
+            alert("Заявление зарегистрировано в облаке!");
             location.reload();
-        } catch (e) { alert("Ошибка сети. Проверьте интернет."); }
+        } catch (e) { alert("Ошибка! Проверьте интернет-соединение."); }
         showLoader(false);
     }
 
@@ -142,8 +206,7 @@
             const data = await res.json();
             const b = document.getElementById('t_body');
             b.innerHTML = '';
-            
-            if(!data) { b.innerHTML = '<tr><td colspan="8" style="text-align:center;">База данных пуста</td></tr>'; return []; }
+            if(!data) { b.innerHTML = '<tr><td colspan="10" style="text-align:center;">База данных пуста</td></tr>'; return []; }
 
             const items = Object.keys(data).map(key => ({ fid: key, ...data[key] }));
             items.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -151,24 +214,67 @@
             items.forEach((it, i) => {
                 b.innerHTML += `<tr>
                     <td><b>${i+1}</b></td>
-                    <td style="color:var(--primary);">${fmtDT(it.date)}</td>
-                    <td>${it.name}<br><small>${fmtD(it.birth)}</small></td>
-                    <td>${it.phone}</td>
+                    <td style="white-space:nowrap;">${fmtDT(it.date)}</td>
                     <td><small>${it.address}</small></td>
-                    <td>${it.need_name}<br><small>${fmtD(it.need_birth)}</small></td>
+                    <td>${it.phone}</td>
+                    <td><b>${it.name}</b></td>
+                    <td>${fmtD(it.birth)}</td>
+                    <td>${it.need_name}</td>
+                    <td>${fmtD(it.need_birth)}</td>
                     <td><small>${it.diag}</small></td>
-                    <td class="no-print">
-                        <button onclick="deleteRow('${it.fid}')" style="background:var(--danger); padding:5px; width:35px;">✕</button>
+                    <td class="no-print" style="display:flex; gap:5px;">
+                        <button onclick='openEdit(${JSON.stringify(it)})' style="background:var(--primary); padding:5px; width:30px;">✎</button>
+                        <button onclick="deleteRow('${it.fid}')" style="background:var(--danger); padding:5px; width:30px;">✕</button>
                     </td>
                 </tr>`;
             });
             return items;
-        } catch (e) { alert("Ошибка загрузки данных!"); return []; }
+        } catch (e) { console.error(e); return []; }
         finally { showLoader(false); }
     }
 
+    // Редактирование (Админ)
+    function openEdit(item) {
+        document.getElementById('e_fid').value = item.fid;
+        const d = new Date(item.date);
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        document.getElementById('e_date').value = d.toISOString().slice(0, 16);
+        
+        document.getElementById('e_name').value = item.name;
+        document.getElementById('e_birth').value = item.birth;
+        document.getElementById('e_phone').value = item.phone;
+        document.getElementById('e_address').value = item.address;
+        document.getElementById('e_need_name').value = item.need_name;
+        document.getElementById('e_need_birth').value = item.need_birth;
+        document.getElementById('e_diag').value = item.diag;
+        document.getElementById('modal').style.display = 'flex';
+    }
+
+    async function saveEdit() {
+        const fid = document.getElementById('e_fid').value;
+        const updatedData = {
+            date: new Date(document.getElementById('e_date').value).toISOString(),
+            name: document.getElementById('e_name').value,
+            birth: document.getElementById('e_birth').value,
+            phone: document.getElementById('e_phone').value,
+            address: document.getElementById('e_address').value,
+            need_name: document.getElementById('e_need_name').value,
+            need_birth: document.getElementById('e_need_birth').value,
+            diag: document.getElementById('e_diag').value
+        };
+
+        showLoader(true);
+        const url = FIREBASE_URL.replace('.json', `/${fid}.json`);
+        try {
+            await fetch(url, { method: 'PATCH', body: JSON.stringify(updatedData) });
+            closeModal();
+            loadFromCloud();
+        } catch (e) { alert("Ошибка сохранения."); }
+        showLoader(false);
+    }
+
     async function deleteRow(fid) {
-        if(!confirm("Удалить запись из облака навсегда?")) return;
+        if(!confirm("Вы действительно хотите удалить запись?")) return;
         showLoader(true);
         const url = FIREBASE_URL.replace('.json', `/${fid}.json`);
         await fetch(url, { method: 'DELETE' });
@@ -178,25 +284,18 @@
     async function searchCloud() {
         const q = document.getElementById('s_query').value.toLowerCase().trim();
         if(!q) return;
-        const resDiv = document.getElementById('res');
-        resDiv.style.display = 'none';
-        
         showLoader(true);
         const res = await fetch(FIREBASE_URL);
         const data = await res.json();
         showLoader(false);
-
-        if(!data) return alert("База пуста");
-
-        const items = Object.keys(data).map(key => data[key]);
-        items.sort((a, b) => new Date(a.date) - new Date(b.date));
-        
+        if(!data) return;
+        const items = Object.keys(data).map(key => data[key]).sort((a,b) => new Date(a.date) - new Date(b.date));
         const idx = items.findIndex(it => it.name.toLowerCase().includes(q));
         if(idx !== -1) {
-            resDiv.style.display = 'block';
+            document.getElementById('res').style.display = 'block';
             document.getElementById('res_name').innerText = items[idx].name;
             document.getElementById('res_pos').innerText = "№" + (idx + 1);
-        } else alert("Заявитель не найден в системе.");
+        } else alert("Пользователь не найден.");
     }
 
     function login() {
@@ -204,9 +303,10 @@
             document.getElementById('adminArea').style.display = 'block';
             document.getElementById('pass_box').style.display = 'none';
             loadFromCloud();
-        } else alert("Неверный пароль администратора.");
+        } else alert("Неверный пароль.");
     }
 
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
     function showLoader(show) { document.getElementById('loader').style.display = show ? 'flex' : 'none'; }
 </script>
 </body>
