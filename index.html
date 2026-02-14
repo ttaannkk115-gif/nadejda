@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master Реестр Cloud v3.8 Ultra</title>
+    <title>Master Реестр Cloud v3.9 Ultra</title>
     <style>
         :root { --primary: #1a73e8; --success: #28a745; --danger: #dc3545; --bg: #f8f9fa; --accent: #e8f0fe; --today-bg: #e6ffed; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 10px; color: #333; line-height: 1.5; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 10px; color: #333; line-height: 1.5; padding: env(safe-area-inset-top) 10px env(safe-area-inset-bottom) 10px; }
         .container { max-width: 1400px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         
         .card { background: #fff; border: 1px solid #eef0f2; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
@@ -36,6 +36,10 @@
 
         .loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.8); z-index: 11000; align-items:center; justify-content:center; font-weight: bold; }
         
+        /* Стили для поиска */
+        .search-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 5px; }
+        @media (min-width: 600px) { .search-grid { grid-template-columns: 1fr 1fr auto; } }
+
         @media print { 
             .no-print { display: none !important; } 
             #adminArea { display: block !important; } 
@@ -51,12 +55,12 @@
 <div id="loader" class="loading-overlay">⏳ Синхронизация с облаком...</div>
 
 <div class="container">
-    <h1 class="no-print" style="text-align:center; font-size:22px;">📋  Очередь на реабилитацию 2027года</h1>
+    <h1 class="no-print" style="text-align:center; font-size:22px;">📋 Очередь на реабилитацию 2027</h1>
 
     <div class="card no-print">
         <div class="grid" id="mainForm">
             <div><label>Дата обращения (авто)</label><input type="text" id="disp_date" class="readonly-field" readonly></div>
-            <div><label>ФИО Заявителя</label><input type="text" id="c_name" placeholder="Обязательно" onblur="formatNameField(this)" oninput="saveDraft()"></div>
+            <div><label>ФИО Заявителя</label><input type="text" id="c_name" placeholder="Иванов Иван Иванович" onblur="formatNameField(this)" oninput="saveDraft()"></div>
             <div><label>Дата рождения (заявителя)</label><input type="date" id="c_birth" oninput="saveDraft()"></div>
             <div><label>Телефон</label><input type="tel" id="c_phone" placeholder="+7..." oninput="saveDraft()"></div>
             <div class="span-2"><label>Адрес проживания</label><input type="text" id="c_address" placeholder="Город, улица, дом, кв." oninput="saveDraft()"></div>
@@ -68,14 +72,24 @@
     </div>
 
     <div class="card no-print" style="background: var(--accent);">
-        <label> Введите ФИО (заявителя) для проверки очереди</label>
-        <div style="display:flex; gap:8px;">
-            <input type="text" id="s_query" placeholder="Введите ФИО заявителя...">
-            <button onclick="searchCloud()" style="width:100px;">ПОИСК</button>
+        <label>🔎 Проверка статуса (ФИО + Дата рождения заявителя)</label>
+        <div class="search-grid">
+            <input type="text" id="s_query" placeholder="ФИО заявителя...">
+            <input type="date" id="s_birth">
+            <button onclick="searchCloud()" style="width:120px;">ПОИСК</button>
         </div>
-        <div id="res" style="display:none; margin-top:10px; padding:15px; background:white; border-radius:10px; border:1px solid #c2dbff;">
-            <span id="res_name" style="font-weight:bold;"></span> — Ваш номер: 
-            <span id="res_pos" style="font-size:24px; font-weight:900; color:var(--primary);"></span>
+        
+        <div id="res" style="display:none; margin-top:15px; padding:20px; background:white; border-radius:12px; border:2px solid var(--primary); box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+            <div style="text-align:center; margin-bottom:10px;">
+                <span style="font-size:14px; color:#666;">Ваш номер в очереди:</span><br>
+                <span id="res_pos" style="font-size:36px; font-weight:900; color:var(--primary);"></span>
+            </div>
+            <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
+            <div style="font-size:14px; line-height:1.6;">
+                <div>👤 <b>Заявитель:</b> <span id="res_name"></span></div>
+                <div>👶 <b>Нуждающийся:</b> <span id="res_need"></span></div>
+                <div>📋 <b>Диагноз:</b> <span id="res_diag" style="color:var(--danger); font-weight:500;"></span></div>
+            </div>
         </div>
     </div>
 
@@ -94,7 +108,7 @@
                     <tr>
                         <th>№</th>
                         <th>Дата заявки</th>
-                        <th>Адрес проживания</th>
+                        <th>Адрес</th>
                         <th>Телефон</th>
                         <th>Заявитель</th>
                         <th>ДР (Заяв.)</th>
@@ -245,6 +259,48 @@
         finally { showLoader(false); }
     }
 
+    // НОВАЯ ФУНКЦИЯ ПОИСКА (ФИО + ДАТА + ДИАГНОЗ)
+    async function searchCloud() {
+        const nameQuery = document.getElementById('s_query').value.toLowerCase().trim();
+        const birthQuery = document.getElementById('s_birth').value;
+
+        if (!nameQuery || !birthQuery) {
+            return alert("Для поиска введите ФИО и дату рождения заявителя!");
+        }
+
+        showLoader(true);
+        try {
+            const response = await fetch(FIREBASE_URL);
+            const data = await response.json();
+            
+            if (!data) return alert("База данных пуста.");
+
+            const items = Object.keys(data)
+                .map(key => data[key])
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            const index = items.findIndex(it => 
+                it.name.toLowerCase() === nameQuery && 
+                it.birth === birthQuery
+            );
+
+            const resDiv = document.getElementById('res');
+            if (index !== -1) {
+                const match = items[index];
+                resDiv.style.display = 'block';
+                document.getElementById('res_pos').innerText = "№" + (index + 1);
+                document.getElementById('res_name').innerText = match.name;
+                document.getElementById('res_need').innerText = match.need_name;
+                document.getElementById('res_diag').innerText = match.diag || "Не указан";
+                resDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                resDiv.style.display = 'none';
+                alert("Запись не найдена. Проверьте ФИО и дату рождения.");
+            }
+        } catch (e) { alert("Ошибка связи."); }
+        finally { showLoader(false); }
+    }
+
     function toggleAdmin() {
         const b = document.getElementById('pass_box');
         b.style.display = b.style.display === 'none' ? 'block' : 'none';
@@ -264,8 +320,7 @@
     async function deleteRow(fid) {
         if(!confirm("Вы действительно хотите удалить запись?")) return;
         showLoader(true);
-        const url = FIREBASE_URL.replace('.json', `/${fid}.json`);
-        await fetch(url, { method: 'DELETE' });
+        await fetch(FIREBASE_URL.replace('.json', `/${fid}.json`), { method: 'DELETE' });
         loadFromCloud();
     }
 
@@ -303,23 +358,6 @@
             loadFromCloud();
         } catch (e) { alert("Ошибка сохранения."); }
         showLoader(false);
-    }
-
-    async function searchCloud() {
-        const q = document.getElementById('s_query').value.toLowerCase().trim();
-        if(!q) return;
-        showLoader(true);
-        const res = await fetch(FIREBASE_URL);
-        const data = await res.json();
-        showLoader(false);
-        if(!data) return;
-        const items = Object.values(data).sort((a,b) => new Date(a.date) - new Date(b.date));
-        const idx = items.findIndex(it => it.name.toLowerCase().includes(q));
-        if(idx !== -1) {
-            document.getElementById('res').style.display = 'block';
-            document.getElementById('res_name').innerText = items[idx].name;
-            document.getElementById('res_pos').innerText = "№" + (idx + 1);
-        } else alert("Пользователь не найден.");
     }
 </script>
 </body>
